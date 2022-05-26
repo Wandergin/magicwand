@@ -4,7 +4,7 @@ setup(
     name="magicwand",
     version="1.0.0",
     author="Alexander Reynolds",
-    install_requires=["opencv-python"],
+    install_requires=["opencv-contrib-python"],
     packages=find_packages(),
     description="Flood filling masking tool.",
 )
