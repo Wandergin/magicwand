@@ -21,6 +21,7 @@ class SelectionWindow:
         h, w = img.shape[:2]
         self.img = img
         self.mask = np.zeros((h, w), dtype=np.uint8)
+        self.previous_mask = np.zeros((h, w), dtype=np.uint8)
         self._flood_mask = np.zeros((h + 2, w + 2), dtype=np.uint8)
         self._flood_fill_flags = (
             connectivity | cv.FLOODFILL_FIXED_RANGE | cv.FLOODFILL_MASK_ONLY | 255 << 8
@@ -36,6 +37,11 @@ class SelectionWindow:
         self.tolerance = (pos,) * 3
 
     def _mouse_callback(self, event, x, y, flags, *userdata):
+
+        if event == cv.EVENT_RBUTTONDOWN:
+            self.mask = self.previous_mask
+            self._update()
+            return
 
         if event != cv.EVENT_LBUTTONDOWN:
             return
@@ -54,6 +60,8 @@ class SelectionWindow:
         )
         flood_mask = self._flood_mask[1:-1, 1:-1].copy()
 
+        self.previous_mask = self.mask
+
         if modifier == (ALT_KEY + SHIFT_KEY):
             self.mask = cv.bitwise_and(self.mask, flood_mask)
         elif modifier == SHIFT_KEY:
@@ -62,14 +70,14 @@ class SelectionWindow:
             self.mask = cv.bitwise_and(self.mask, cv.bitwise_not(flood_mask))
         else:
             self.mask = flood_mask
-
+        
         self._update()
 
     def _update(self):
         """Updates an image in the already drawn window."""
         viz = self.img.copy()
         contours = _find_exterior_contours(self.mask)
-        viz = cv.drawContours(viz, contours, -1, color=(255,) * 3, thickness=-1)
+        viz = cv.drawContours(viz, contours, -1, color=(255,0,0), thickness=-1)
         viz = cv.addWeighted(self.img, 0.75, viz, 0.25, 0)
         viz = cv.drawContours(viz, contours, -1, color=(255,) * 3, thickness=1)
 
@@ -77,7 +85,8 @@ class SelectionWindow:
         meanstr = "mean=({:.2f}, {:.2f}, {:.2f})".format(*self.mean[:, 0])
         stdstr = "std=({:.2f}, {:.2f}, {:.2f})".format(*self.stddev[:, 0])
         cv.imshow(self.name, viz)
-        cv.displayStatusBar(self.name, ", ".join((meanstr, stdstr)))
+        print(self.name, ", ".join((meanstr, stdstr)))
+        # cv.displayStatusBar(self.name, ", ".join((meanstr, stdstr)))
 
     def show(self):
         """Draws a window with the supplied image."""
